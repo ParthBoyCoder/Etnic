@@ -170,9 +170,7 @@ Get it from: [Gemini API Key](https://makersuite.google.com/app/apikey)
 
 ## 🎥 Demo
 
-```text
-COMING SOON
-```
+https://www.youtube.com/shorts/p6JzFIpzOIY
 
 ---
 
