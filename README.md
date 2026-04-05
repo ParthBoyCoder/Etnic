@@ -135,6 +135,8 @@ const ESP_IP = "192.168.0.19";
 
 Replace it with your ESP32 IP address from Serial Monitor.
 
+Also insert your Wi-Fi credentials into the (.ino) sketch!
+
 Add your Gemini API key:
 
 ```js
