@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Etnic Voice AI</title>
+
+<style>
+body {
+  font-family: Arial;
+  background: #0f172a;
+  color: #e2e8f0;
+  text-align: center;
+  padding-top: 50px;
+}
+
+.card {
+  background: #1e293b;
+  padding: 30px;
+  border-radius: 16px;
+  width: 350px;
+  margin: auto;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+}
+
+.status {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #38bdf8;
+}
+
+.reply {
+  margin-top: 20px;
+  font-size: 16px;
+  color: #22c55e;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+  <h2>🎤 Etnic</h2>
+  <p>Press button on device to talk</p>
+
+  <div class="status" id="status">Idle</div>
+  <div class="reply" id="reply"></div>
+</div>
+
+<script>
+let ws;
+let recordingData = [];
+
+const API_KEY = "UR_API_KEY_FROM_GGLaiSTUDIO";
+
+const ESP_IP = "192.168.0.19";
+
+// ===== CONNECT =====
+function connect() {
+  ws = new WebSocket("ws://" + ESP_IP + ":81/");
+  ws.binaryType = "arraybuffer";
+
+  ws.onmessage = async (e) => {
+
+    // TEXT COMMANDS
+    if (typeof e.data === "string") {
+
+      if (e.data === "START") {
+        recordingData = [];
+        document.getElementById("status").innerText = "Recording...";
+      }
+
+      if (e.data === "STOP") {
+        document.getElementById("status").innerText = "Thinking...";
+        await processAudio();
+      }
+
+      return;
+    }
+
+    // AUDIO DATA
+    let pcm = new Int16Array(e.data);
+    recordingData.push(pcm);
+  };
+}
+
+connect();
+
+// ===== PCM → WAV =====
+function pcmToWav(pcm) {
+  let buffer = new ArrayBuffer(44 + pcm.length * 2);
+  let view = new DataView(buffer);
+
+  function writeString(offset, str) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
+
+  writeString(0, "RIFF");
+  view.setUint32(4, 36 + pcm.length * 2, true);
+  writeString(8, "WAVE");
+  writeString(12, "fmt ");
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, 1, true);
+  view.setUint32(24, 16000, true);
+  view.setUint32(28, 32000, true);
+  view.setUint16(32, 2, true);
+  view.setUint16(34, 16, true);
+  writeString(36, "data");
+  view.setUint32(40, pcm.length * 2, true);
+
+  let offset = 44;
+  for (let i = 0; i < pcm.length; i++, offset += 2) {
+    view.setInt16(offset, pcm[i], true);
+  }
+
+  return new Uint8Array(buffer);
+}
+
+// ===== PROCESS AUDIO =====
+async function processAudio() {
+
+  let totalLength = recordingData.reduce((sum, arr) => sum + arr.length, 0);
+  let merged = new Int16Array(totalLength);
+
+  let offset = 0;
+  for (let arr of recordingData) {
+    merged.set(arr, offset);
+    offset += arr.length;
+  }
+
+  let wav = pcmToWav(merged);
+
+  let binary = '';
+  for (let i = 0; i < wav.length; i++) {
+    binary += String.fromCharCode(wav[i]);
+  }
+
+  let base64Audio = btoa(binary);
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+
+  const payload = {
+    contents: [{
+      parts: [
+        {
+          inline_data: {
+            mime_type: "audio/wav",
+            data: base64Audio
+          }
+        },
+        {
+          text: "Respond conversationally in short sentences."
+        }
+      ]
+    }]
+  };
+
+  let res = await fetch(url, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(payload)
+  });
+
+  let data = await res.json();
+
+  let reply = data.candidates?.[0]?.content?.parts?.[0]?.text || "No reply";
+
+  document.getElementById("reply").innerText = reply;
+  document.getElementById("status").innerText = "Done";
+
+  // SEND BACK TO ESP32
+  ws.send(reply);
+}
+</script>
+
+</body>
+</html>
