@@ -120,7 +120,7 @@ sketch.ino
 Open:
 
 ```text
-index2.html
+index.html
 ```
 
 ---
@@ -203,6 +203,7 @@ https://github.com/ParthBoyCoder/INMP441
 ## 💡 Inspiration
 
 Built as a step toward creating a real hardware AI assistant system.
+Thanks to ChatGPT for help in making the code and this markdown file (😉😅)
 
 ---
 
