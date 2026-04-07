@@ -5,6 +5,13 @@ It captures audio from a microphone, streams it to a browser, processes it using
 
 ---
 
+# Problem Statement
+
+Existing voice assistants are either fully cloud-based or limited to desktops and smartphones.  
+Etnic solves the problem of creating a **portable, embedded AI voice assistant** by combining ESP32 hardware, real-time audio streaming, and Gemini AI processing, enabling a hands-on, hardware-controlled conversational interface.
+
+---
+
 ## ⚡ Features
 
 - 🎤 Push-to-talk voice input (hardware button)
@@ -192,11 +199,24 @@ https://github.com/ParthBoyCoder/INMP441
 
 ## 🔮 Future Improvements
 
-- 🔊 Speaker (text-to-speech)
-- 🧠 Memory (context awareness)
-- ⚡ Wake word detection
-- 🌐 Cloud backend deployment
-- 📦 Custom enclosure
+- Speaker (text-to-speech)
+- Memory (context awareness)
+- Wake word detection
+- Cloud backend deployment
+- Custom enclosure
+- Currently, We are using a cloud model. Soon, we can switch to local quantized language models (maybe through ollama).
+
+---
+
+## Challenges Faced (and Mistakes I Made)
+
+- Initially, I tried running the entire pipeline directly on the ESP32 (after successfully using Gemini for text tasks), but quickly hit hardware limitations when dealing with real-time audio processing.
+
+- I then built an intermediate Python Flask server on a Raspberry Pi Zero W to handle audio chunks and processing. While it worked, the system became overly complex and harder to manage.
+
+- At one point, a large portion of the codebase was AI-assisted. I made sure to understand everything I used, but as complexity increased, I realized that maintainability matters more than just “making it work”.
+
+- This led me to redesign the system using a simpler browser-based streaming approach, which made the architecture cleaner, more understandable, and more reliable.
 
 ---
 
